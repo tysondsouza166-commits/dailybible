@@ -1,0 +1,6 @@
+{
+  "name": "DailyBible",
+  "description": "A modern Bible study, scripture discovery, daily prayer companion and devotional app.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
