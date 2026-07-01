@@ -41,7 +41,7 @@ if (pool) {
 }
 
 // Initialize Gemini AI (Using native SDK as primary, with a robust fallback pipeline)
-const apiKey = process.env.GEMINI_API_KEY || "dummy";
+const apiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY || "dummy";
 const ai = new GoogleGenAI({
   apiKey,
   httpOptions: {
@@ -627,9 +627,9 @@ async function callGemini(prompt: string, systemInstruction?: string, options?: 
 
   try {
     // 1. TRY NATIVE GEMINI FIRST (if API key is present and not dummy/placeholder)
-    const geminiApiKey = process.env.GEMINI_API_KEY;
+    const geminiApiKey = process.env.GEMINI_API_KEY || process.env.VITE_GEMINI_API_KEY;
     if (geminiApiKey && geminiApiKey !== "dummy" && geminiApiKey !== "placeholder" && Date.now() > nativeQuotaExhaustedUntil) {
-      const nativeModels = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
+      const nativeModels = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3.1-pro-preview"];
       for (const model of nativeModels) {
         try {
           console.log(`[Gemini API] Attempting native ${model} call...`);
@@ -649,12 +649,13 @@ async function callGemini(prompt: string, systemInstruction?: string, options?: 
           }
         } catch (nativeErr: any) {
           const errMsg = nativeErr.message || String(nativeErr);
+          console.warn(`[Gemini API] Native ${model} failed: ${errMsg}`);
           const isQuota = errMsg.includes("429") || errMsg.includes("quota") || errMsg.includes("RESOURCE_EXHAUSTED");
           
           if (isQuota) {
-            console.log(`[Gemini Status] Quota limit encountered on native API. Activating dynamic local fallback.`);
-            nativeQuotaExhaustedUntil = Date.now() + 30 * 60 * 1000; // 30 minutes cooldown
-            break; // Stop attempting native calls immediately
+            console.log(`[Gemini Status] Quota limit encountered on native ${model}. Activating brief cooldown.`);
+            nativeQuotaExhaustedUntil = Date.now() + 5000; // 5 seconds cooldown
+            // Do not break the loop completely - let's try the next native model!
           } else {
             console.log(`[Gemini Status] Native ${model} returned unready state. Trying next options.`);
           }

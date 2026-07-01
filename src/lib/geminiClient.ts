@@ -97,7 +97,7 @@ export async function callGemini(prompt: string, systemInstruction?: string, opt
 
   const mimeType = isJsonExpected ? "application/json" : undefined;
 
-  const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash"];
+  const modelsToTry = ["gemini-3.5-flash", "gemini-3.1-flash-lite", "gemini-2.5-flash", "gemini-3.1-pro-preview"];
   let lastError: any;
 
   // Shared 429 backoff delays: 2s, 4s, 8s
