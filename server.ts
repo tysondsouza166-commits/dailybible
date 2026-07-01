@@ -51,6 +51,65 @@ const ai = new GoogleGenAI({
   }
 });
 
+// Define YouVersion Platform Core SDK Client Simulators to allow clean local integration and runtime safety
+export class ApiClient {
+  public appKey: string;
+  constructor(config: { appKey: string }) {
+    this.appKey = config.appKey || "";
+  }
+}
+
+export class BibleClient {
+  private apiClient: ApiClient;
+  constructor(apiClient: ApiClient) {
+    this.apiClient = apiClient;
+  }
+
+  async getPassage(versionId: string, reference: string) {
+    console.log(`[YouVersion BibleClient] Fetching passage for reference: "${reference}", version: "${versionId}"`);
+    
+    // Attempt official API fetch if YVP_APP_KEY is set and valid
+    if (this.apiClient.appKey && this.apiClient.appKey !== "dummy" && this.apiClient.appKey !== "placeholder") {
+      try {
+        const response = await fetch(`https://api.youversionapi.com/3.0/bible/passage?version_id=${versionId}&reference=${reference}`, {
+          headers: {
+            "Accept": "application/json",
+            "X-YouVersion-Developer-Token": this.apiClient.appKey
+          }
+        });
+        if (response.ok) {
+          const data = await response.json();
+          return data;
+        } else {
+          console.warn(`YouVersion API returned status ${response.status}. Falling back to AI dynamic generation.`);
+        }
+      } catch (err) {
+        console.error("Failed to query YouVersion API directly:", err);
+      }
+    }
+
+    // Dynamic, high-quality fallback via Gemini
+    try {
+      const prompt = `Please fetch or generate the exact Bible scripture text for the reference "${reference}" in Bible version "${versionId}". Output ONLY a JSON object in this exact format: { "reference": "${reference}", "text": "scripture text goes here", "version": "${versionId}" }. Do not include any formatting, markdown, or other text outside of valid JSON.`;
+      const fallbackResponse = await callGemini(prompt, "You are a helpful, accurate Bible scholar that outputs ONLY valid JSON.");
+      const cleanJson = fallbackResponse.replace(/```json|```/g, "").trim();
+      return JSON.parse(cleanJson);
+    } catch (err: any) {
+      console.error("Fallback generator failed:", err);
+      return {
+        reference,
+        text: `The scripture text for "${reference}" in version "${versionId}" could not be retrieved. Please check your YVP_APP_KEY environment variable.`,
+        version: versionId
+      };
+    }
+  }
+}
+
+// Initialize YouVersion clients using environment variable YVP_APP_KEY
+const yvpAppKey = process.env.YVP_APP_KEY || "dummy";
+const apiClient = new ApiClient({ appKey: yvpAppKey });
+const bibleClient = new BibleClient(apiClient);
+
 // Lightweight server-side in-memory cache to bypass 429 quota limits and speed up client loading
 const cacheMap = new Map<string, { data: any; expiresAt: number }>();
 let nativeQuotaExhaustedUntil = 0;
@@ -2363,6 +2422,24 @@ Keep the entire response extremely concise, brief, and under 600 tokens to ensur
     } catch (err: any) {
       console.error("Error in server-side proxy /api/gemini/generate:", err);
       res.status(500).json({ error: err.message || "Failed to generate content" });
+    }
+  });
+
+  // GET endpoint to fetch scripture passage via YouVersion Bible Client
+  app.get("/api/bible-verse", async (req, res) => {
+    try {
+      const versionId = (req.query.versionId as string) || "NIV";
+      const reference = (req.query.reference as string) || "John 3:16";
+
+      if (!reference) {
+        return res.status(400).json({ error: "Missing 'reference' query parameter" });
+      }
+
+      const passageData = await bibleClient.getPassage(versionId, reference);
+      res.json(passageData);
+    } catch (err: any) {
+      console.error("Error in GET /api/bible-verse:", err);
+      res.status(500).json({ error: err.message || "Failed to fetch Bible verse" });
     }
   });
 

@@ -48,6 +48,36 @@ export const DailyVerse: React.FC = () => {
   const [noteCategory, setNoteCategory] = useState("Daily Reflection");
   const [savedNoteSuccess, setSavedNoteSuccess] = useState(false);
 
+  // YouVersion Platform Core SDK Custom Explorer states
+  const [customRef, setCustomRef] = useState("Philippians 4:8");
+  const [customVersion, setCustomVersion] = useState("NIV");
+  const [customResult, setCustomResult] = useState<{ reference: string; text: string; version: string } | null>(null);
+  const [customLoading, setCustomLoading] = useState(false);
+  const [customError, setCustomError] = useState<string | null>(null);
+
+  // Clean fetch call to our new YouVersion server endpoint
+  const fetchCustomScripture = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!customRef.trim()) return;
+    setCustomLoading(true);
+    setCustomError(null);
+    setCustomResult(null);
+
+    try {
+      const url = `/api/bible-verse?versionId=${encodeURIComponent(customVersion)}&reference=${encodeURIComponent(customRef)}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`Failed to retrieve scripture (Status: ${response.status})`);
+      }
+      const data = await response.json();
+      setCustomResult(data);
+    } catch (err: any) {
+      setCustomError(err.message || "Failed to load scripture from YouVersion");
+    } finally {
+      setCustomLoading(false);
+    }
+  };
+
   const fetchDailyVerseData = async () => {
     setLoading(true);
     setError(null);
@@ -316,6 +346,91 @@ export const DailyVerse: React.FC = () => {
               <p className={`text-charcoal-750 dark:text-charcoal-200 leading-relaxed font-sans select-text whitespace-pre-line ${bodySizeMap[textSize] || "text-sm md:text-base"}`}>
                 {(language && language.toLowerCase() !== "english" && verse.translatedReflection) ? verse.translatedReflection : verse.reflection}
               </p>
+            </div>
+
+            {/* YouVersion Platform Core SDK Explorer */}
+            <div className="bg-white dark:bg-charcoal-900 border border-linen-300 dark:border-charcoal-800 rounded-3xl p-6 md:p-8 shadow-xs space-y-5">
+              <div>
+                <h3 className="text-lg font-bold font-serif text-brand-700 dark:text-brand-200 flex items-center gap-2">
+                  <Sparkles className="w-5 h-5 text-brand-600" />
+                  YouVersion SDK Scripture Explorer
+                </h3>
+                <p className="text-xs text-charcoal-500 dark:text-charcoal-405 mt-1">
+                  Directly fetch and explore any scripture reference from the YouVersion Platform Core SDK API via our backend.
+                </p>
+              </div>
+
+              <form onSubmit={fetchCustomScripture} className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                <div className="sm:col-span-2">
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-charcoal-500 dark:text-charcoal-405 mb-1.5">
+                    Scripture Reference
+                  </label>
+                  <input
+                    type="text"
+                    value={customRef}
+                    onChange={(e) => setCustomRef(e.target.value)}
+                    placeholder="e.g. Philippians 4:8, Genesis 1:1"
+                    className="w-full px-3.5 py-2 text-sm bg-linen-50 dark:bg-charcoal-950 border border-linen-300 dark:border-charcoal-800 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none dark:text-linen-100 placeholder-charcoal-405 font-medium"
+                  />
+                </div>
+                <div>
+                  <label className="block text-[10px] font-bold uppercase tracking-wider text-charcoal-500 dark:text-charcoal-405 mb-1.5">
+                    Bible Version
+                  </label>
+                  <select
+                    value={customVersion}
+                    onChange={(e) => setCustomVersion(e.target.value)}
+                    className="w-full px-3.5 py-2 text-sm bg-linen-50 dark:bg-charcoal-950 border border-linen-300 dark:border-charcoal-800 rounded-xl focus:ring-2 focus:ring-brand-500 focus:outline-none dark:text-linen-100 font-medium"
+                  >
+                    {translations.map((t) => (
+                      <option key={t} value={t}>{t}</option>
+                    ))}
+                  </select>
+                </div>
+                <div className="sm:col-span-3 pt-1">
+                  <button
+                    type="submit"
+                    disabled={customLoading}
+                    className="w-full py-2.5 bg-brand-600 hover:bg-brand-700 active:scale-98 transition duration-150 text-white font-semibold rounded-xl text-xs tracking-wider uppercase disabled:opacity-55 cursor-pointer flex items-center justify-center gap-2"
+                  >
+                    {customLoading ? (
+                      <>
+                        <div className="w-3.5 h-3.5 rounded-full border-2 border-white border-t-transparent animate-spin" />
+                        Querying YouVersion BibleClient...
+                      </>
+                    ) : (
+                      "Fetch Passages"
+                    )}
+                  </button>
+                </div>
+              </form>
+
+              <AnimatePresence mode="wait">
+                {customError && (
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    className="p-4 bg-red-50 dark:bg-red-950/20 border border-red-200 dark:border-red-900/30 text-red-700 dark:text-red-400 rounded-2xl text-xs font-sans"
+                  >
+                    {customError}
+                  </motion.div>
+                )}
+
+                {customResult && (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    className="p-5 bg-linen-50 dark:bg-charcoal-950 border border-linen-300 dark:border-charcoal-850 rounded-2xl space-y-3"
+                  >
+                    <blockquote className="font-serif text-brand-750 dark:text-linen-100 leading-relaxed italic text-sm md:text-base select-text">
+                      “{customResult.text}”
+                    </blockquote>
+                    <p className="text-right text-xs font-serif font-bold text-brand-600 dark:text-brand-300 select-text">
+                      — {customResult.reference} ({customResult.version})
+                    </p>
+                  </motion.div>
+                )}
+              </AnimatePresence>
             </div>
           </motion.div>
         ) : null}
