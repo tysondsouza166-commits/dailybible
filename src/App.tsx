@@ -14,6 +14,7 @@ const Devotionals = lazy(() => import("./components/Devotionals").then(module =>
 const ChapterSummaries = lazy(() => import("./components/ChapterSummaries").then(module => ({ default: module.ChapterSummaries })));
 const PrayerCompanion = lazy(() => import("./components/PrayerCompanion").then(module => ({ default: module.PrayerCompanion })));
 const UserDashboard = lazy(() => import("./components/UserDashboard").then(module => ({ default: module.UserDashboard })));
+const ChurchFinder = lazy(() => import("./components/ChurchFinder").then(module => ({ default: module.ChurchFinder })));
 import { 
   Sparkles, 
   Search, 
@@ -24,12 +25,13 @@ import {
   User, 
   Flame,
   Globe,
-  ExternalLink
+  ExternalLink,
+  MapPin
 } from "lucide-react";
 
 function MainAppLayout() {
   const { user, loading, isDarkMode, toggleTheme, streak, language } = useApp();
-  const [activeTab, setActiveTab] = useState<"daily" | "search" | "chat" | "chapters" | "prayers" | "devotionals" | "profile">("daily");
+  const [activeTab, setActiveTab] = useState<"daily" | "search" | "chat" | "chapters" | "prayers" | "devotionals" | "profile" | "churches">("daily");
   
   const isIframe = typeof window !== "undefined" && window.self !== window.top;
 
@@ -54,6 +56,7 @@ function MainAppLayout() {
     { id: "chat", label: translate("guided_study", language), icon: MessageSquare },
     { id: "devotionals", label: translate("devotionals", language), icon: Sparkles },
     { id: "prayers", label: translate("prayer_companion", language), icon: Heart },
+    { id: "churches", label: translate("church_finder", language), icon: MapPin },
     { id: "profile", label: translate("dashboard", language), icon: User }
   ];
 
@@ -160,6 +163,7 @@ function MainAppLayout() {
               {activeTab === "devotionals" && <Devotionals />}
               {activeTab === "chapters" && <ChapterSummaries />}
               {activeTab === "prayers" && <PrayerCompanion />}
+              {activeTab === "churches" && <ChurchFinder />}
               {activeTab === "profile" && <UserDashboard />}
             </Suspense>
           </section>

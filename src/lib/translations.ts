@@ -8,6 +8,7 @@ export const TRANSLATIONS: Record<string, Record<string, string>> = {
     "chapter_guides": "Bible",
     "prayer_companion": "Prayer Companion",
     "dashboard": "Dashboard",
+    "church_finder": "Church Finder",
     
     // Header/Footer
     "slogan": "Your Daily Scripture Companion",
