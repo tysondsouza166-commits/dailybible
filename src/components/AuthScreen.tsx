@@ -56,15 +56,15 @@ export const AuthScreen: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-linen-100 dark:bg-charcoal-950 text-charcoal-800 dark:text-linen-100 flex flex-col items-center justify-center p-4">
+    <div className="w-full min-h-[100dvh] bg-white dark:bg-black text-slate-900 dark:text-white flex flex-col items-center justify-center p-4">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.6 }}
-        className="max-w-md w-full bg-white dark:bg-charcoal-900 border border-linen-300 dark:border-charcoal-800 rounded-2xl shadow-xl overflow-hidden"
+        className="w-full bg-slate-50 dark:bg-[#1C1C1E] border border-slate-100 dark:border-gray-800 rounded-3xl shadow-xl overflow-hidden"
       >
         {/* Banner area */}
-        <div className="bg-gradient-to-br from-teal-600 to-emerald-700 p-8 text-white text-center relative overflow-hidden">
+        <div className="bg-gradient-to-br from-red-600 to-red-800 p-8 text-white text-center relative overflow-hidden">
           <div className="absolute top-0 left-0 right-0 bottom-0 opacity-10 bg-[radial-gradient(#fff_1px,transparent_1px)] [background-size:16px_16px]" />
           <motion.div
             initial={{ scale: 0.8 }}
@@ -75,23 +75,23 @@ export const AuthScreen: React.FC = () => {
             <BookOpen className="w-8 h-8 text-white" />
           </motion.div>
           <h1 className="text-3xl font-serif font-bold tracking-tight">DailyBible</h1>
-          <p className="text-teal-100 text-sm mt-1">{translate("slogan", language) || "Your Daily Scripture Companion"}</p>
+          <p className="text-red-100 text-sm mt-1">{translate("slogan", language) || "Your Daily Scripture Companion"}</p>
         </div>
-
+ 
         {/* Form Area */}
-        <div className="p-8 space-y-6">
+        <div className="p-6 space-y-6">
           {error && (
             <div className="p-3 bg-rose-50 dark:bg-rose-950/30 text-rose-600 dark:text-rose-400 text-sm rounded-lg border border-rose-200 dark:border-rose-900/50">
               {error}
             </div>
           )}
-
+ 
           {/* Quick Access Pilgrim Button */}
           <div className="space-y-3">
             <button
               onClick={handleFaithPilgrim}
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-3 bg-teal-600 hover:bg-teal-700 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 focus:ring-offset-2 active:scale-98 disabled:opacity-50 cursor-pointer"
+              className="w-full flex items-center justify-center space-x-3 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-xl shadow-md transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 active:scale-98 disabled:opacity-50 cursor-pointer"
             >
               <Heart className="w-5 h-5 fill-white/25" />
               <span>Continue as Faith Pilgrim</span>
@@ -100,15 +100,15 @@ export const AuthScreen: React.FC = () => {
               Instant access with preset journaling & prayer templates
             </p>
           </div>
-
+ 
           <div className="flex items-center my-4">
-            <div className="flex-1 border-t border-linen-300 dark:border-charcoal-800" />
+            <div className="flex-1 border-t border-slate-200 dark:border-neutral-800" />
             <span className="px-3 text-xs text-slate-400 dark:text-slate-500 uppercase tracking-widest font-mono">
               Or Use Email Access
             </span>
-            <div className="flex-1 border-t border-linen-300 dark:border-charcoal-800" />
+            <div className="flex-1 border-t border-slate-200 dark:border-neutral-800" />
           </div>
-
+ 
           {/* Email and Name/Password Form */}
           <form onSubmit={handleEmailSubmit} className="space-y-4">
             {isSignUp && (
@@ -127,11 +127,11 @@ export const AuthScreen: React.FC = () => {
                   onChange={(e) => setName(e.target.value)}
                   placeholder="Faith Pilgrim"
                   disabled={loading}
-                  className="w-full bg-linen-50 dark:bg-charcoal-950 border border-linen-300 dark:border-charcoal-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
+                  className="w-full bg-white dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl py-3 px-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-900 dark:text-white transition-colors"
                 />
               </motion.div>
             )}
-
+ 
             <div>
               <label htmlFor="email-input" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Email Address
@@ -145,12 +145,12 @@ export const AuthScreen: React.FC = () => {
                   placeholder="name@example.com"
                   required
                   disabled={loading}
-                  className="w-full bg-linen-50 dark:bg-charcoal-950 border border-linen-300 dark:border-charcoal-800 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
+                  className="w-full bg-white dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl py-3 pl-11 pr-4 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-900 dark:text-white transition-colors"
                 />
                 <Mail className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
               </div>
             </div>
-
+ 
             <div>
               <label htmlFor="password-input" className="block text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-2">
                 Password
@@ -163,28 +163,30 @@ export const AuthScreen: React.FC = () => {
                   onChange={(e) => setPassword(e.target.value)}
                   placeholder="••••••••"
                   disabled={loading}
-                  className="w-full bg-linen-50 dark:bg-charcoal-950 border border-linen-300 dark:border-charcoal-800 rounded-xl py-3 pl-11 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 transition-colors"
+                  className="w-full bg-white dark:bg-black border border-slate-200 dark:border-neutral-800 rounded-xl py-3 pl-11 pr-11 text-sm focus:outline-none focus:ring-2 focus:ring-red-500 text-slate-900 dark:text-white transition-colors"
                 />
                 <Lock className="absolute left-4 top-3.5 w-4 h-4 text-slate-400" />
                 <button
                   type="button"
-                  onClick={() => setShowPassword(!showPassword)}
+                  onClick={() => {
+                    setShowPassword(!showPassword);
+                  }}
                   className="absolute right-4 top-3.5 text-slate-400 hover:text-slate-600 focus:outline-none cursor-pointer"
                 >
                   {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
                 </button>
               </div>
             </div>
-
+ 
             <button
               type="submit"
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-2 bg-charcoal-800 hover:bg-charcoal-700 dark:bg-linen-100 dark:hover:bg-linen-200 text-white dark:text-charcoal-900 font-medium py-3 px-4 rounded-xl shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-teal-500 active:scale-98 disabled:opacity-50 cursor-pointer"
+              className="w-full flex items-center justify-center space-x-2 bg-red-600 hover:bg-red-700 text-white font-medium py-3 px-4 rounded-xl shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-red-500 active:scale-98 disabled:opacity-50 cursor-pointer"
             >
               <span>{isSignUp ? "Create Account & Access" : "Access Bible Dashboard"}</span>
               <ArrowRight className="w-4 h-4" />
             </button>
-
+ 
             <div className="text-center pt-1">
               <button
                 type="button"
@@ -192,19 +194,19 @@ export const AuthScreen: React.FC = () => {
                   setIsSignUp(!isSignUp);
                   setError(null);
                 }}
-                className="text-xs text-teal-600 dark:text-teal-400 hover:underline font-semibold focus:outline-none cursor-pointer"
+                className="text-xs text-red-600 dark:text-red-400 hover:underline font-semibold focus:outline-none cursor-pointer"
               >
                 {isSignUp ? "Already have an account? Sign In" : "Need an account? Sign Up"}
               </button>
             </div>
           </form>
-
+ 
           {/* Google Sign-in Alternative */}
-          <div className="pt-2 border-t border-linen-300 dark:border-charcoal-800">
+          <div className="pt-2 border-t border-slate-200 dark:border-neutral-800">
             <button
               onClick={handleGoogleClick}
               disabled={loading}
-              className="w-full flex items-center justify-center space-x-2 bg-slate-50 hover:bg-slate-100 dark:bg-charcoal-950 dark:hover:bg-charcoal-800 border border-linen-300 dark:border-charcoal-800 text-slate-600 dark:text-slate-300 py-2.5 px-4 rounded-xl text-sm transition-all cursor-pointer"
+              className="w-full flex items-center justify-center space-x-2 bg-white hover:bg-slate-50 dark:bg-black dark:hover:bg-neutral-900 border border-slate-200 dark:border-neutral-800 text-slate-600 dark:text-slate-300 py-2.5 px-4 rounded-xl text-sm transition-all cursor-pointer"
             >
               <svg className="w-4 h-4 mr-1" viewBox="0 0 24 24">
                 <path
@@ -228,9 +230,9 @@ export const AuthScreen: React.FC = () => {
             </button>
           </div>
         </div>
-
+ 
         {/* Info footer */}
-        <div className="bg-linen-50 dark:bg-charcoal-950 px-8 py-4 flex items-center justify-center space-x-2 text-xs text-slate-400 dark:text-slate-500 border-t border-linen-300 dark:border-charcoal-800">
+        <div className="bg-slate-100 dark:bg-black px-6 py-4 flex items-center justify-center space-x-2 text-xs text-slate-400 dark:text-slate-500 border-t border-slate-200 dark:border-neutral-800">
           <Shield className="w-3.5 h-3.5" />
           <span>Secured by Firebase Authentication</span>
         </div>

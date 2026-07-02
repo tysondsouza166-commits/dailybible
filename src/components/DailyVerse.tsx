@@ -143,7 +143,7 @@ export const DailyVerse: React.FC = () => {
   ];
 
   return (
-    <div className="w-full max-w-3xl mx-auto py-4 px-2 space-y-6">
+    <div className="w-full max-w-3xl mx-auto py-4 px-0 space-y-6">
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold font-serif tracking-tight text-brand-700 dark:text-brand-200">
@@ -216,7 +216,7 @@ export const DailyVerse: React.FC = () => {
             animate={{ opacity: 1, y: 0 }}
             className="space-y-5"
           >
-            <div className="bg-white dark:bg-charcoal-900 border border-linen-300 dark:border-charcoal-800 rounded-3xl shadow-xs overflow-hidden p-8 relative">
+            <div className="bg-white dark:bg-charcoal-900 border border-linen-300 dark:border-charcoal-800 rounded-3xl shadow-xs overflow-hidden p-6 md:p-8 relative">
               <div className="absolute top-4 right-4 flex items-center space-x-1">
                 <button
                   onClick={handleTTSToggle}

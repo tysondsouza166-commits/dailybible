@@ -424,7 +424,7 @@ export const ChapterSummaries: React.FC = () => {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto py-4 px-2">
+    <div className="w-full max-w-4xl mx-auto py-4 px-0">
       <div className="mb-6">
         <h2 className="text-2xl font-bold font-serif tracking-tight text-brand-700 dark:text-brand-200">
           {translate("chapter_study_guides", language)}

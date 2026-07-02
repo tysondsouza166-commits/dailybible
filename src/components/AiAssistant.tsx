@@ -231,7 +231,7 @@ Please feel free to ask me any questions about scripture meanings, biblical hist
   };
 
   return (
-    <div className="w-full max-w-3xl mx-auto py-4 px-2 flex flex-col h-[calc(100vh-13rem)] min-h-[480px]">
+    <div className="w-full max-w-3xl mx-auto py-4 px-0 flex flex-col h-[calc(100vh-13rem)] min-h-[480px]">
       {/* Header */}
       <div className="mb-4">
         <h2 className="text-2xl font-bold font-serif tracking-tight text-brand-700 dark:text-brand-200 flex items-center space-x-2">

@@ -1,0 +1,169 @@
+{
+  "entities": {
+    "User": {
+      "title": "User Profile",
+      "description": "Information about a registered user, including social and preference fields",
+      "type": "object",
+      "properties": {
+        "displayName": { "type": "string", "description": "The public display name of the user" },
+        "bio": { "type": "string", "description": "Short bio or tagline" },
+        "photoURL": { "type": "string", "description": "URL of the user profile picture" },
+        "updatedAt": { "type": "string", "format": "date-time", "description": "Timestamp of the last profile update" }
+      },
+      "required": ["updatedAt"]
+    },
+    "Favorite": {
+      "title": "Favorite Verse",
+      "description": "A bookmarked or favorited Bible verse for a user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "reference": { "type": "string" },
+        "text": { "type": "string" },
+        "category": { "type": "string" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "reference", "text", "category", "savedAt"]
+    },
+    "Note": {
+      "title": "Personal Note",
+      "description": "Personal notes on a specific scripture reference",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "reference": { "type": "string" },
+        "content": { "type": "string" },
+        "category": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "reference", "content", "category", "updatedAt"]
+    },
+    "Prayer": {
+      "title": "Prayer Record",
+      "description": "User's personal prayer requests and companions",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "request": { "type": "string" },
+        "prayer": { "type": "string" },
+        "createdAt": { "type": "string", "format": "date-time" },
+        "answered": { "type": "boolean" }
+      },
+      "required": ["userId", "request", "prayer", "createdAt", "answered"]
+    },
+    "Study": {
+      "title": "Recent Study",
+      "description": "Bible study guides and summaries recorded by user",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "book": { "type": "string" },
+        "chapter": { "type": "integer" },
+        "summary": { "type": "string" },
+        "date": { "type": "string", "format": "date-time" }
+      },
+      "required": ["userId", "book", "chapter", "summary", "date"]
+    },
+    "Bookmark": {
+      "title": "Bookmarked Verse",
+      "description": "Verse bookmarked directly on the user subcollection",
+      "type": "object",
+      "properties": {
+        "reference": { "type": "string" },
+        "text": { "type": "string" },
+        "savedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["reference", "text", "savedAt"]
+    },
+    "Streak": {
+      "title": "User Streak",
+      "description": "Daily reading streak tracking",
+      "type": "object",
+      "properties": {
+        "currentStreak": { "type": "integer" },
+        "lastActiveDate": { "type": "string" },
+        "updatedAt": { "type": "string", "format": "date-time" }
+      },
+      "required": ["currentStreak", "lastActiveDate", "updatedAt"]
+    },
+    "Chat": {
+      "title": "Chat Room",
+      "description": "A secure, peer-to-peer real-time chat between two community members",
+      "type": "object",
+      "properties": {
+        "participants": { "type": "array" },
+        "createdAt": { "type": "string" }
+      },
+      "required": ["participants", "createdAt"]
+    },
+    "ChatMessage": {
+      "title": "Chat Message",
+      "description": "An individual message within a specific chat room",
+      "type": "object",
+      "properties": {
+        "senderId": { "type": "string" },
+        "text": { "type": "string" },
+        "timestamp": { "type": "string" }
+      },
+      "required": ["senderId", "text", "timestamp"]
+    },
+    "PrayerRequest": {
+      "title": "Prayer Request",
+      "description": "A public or anonymous prayer request published to the Global Prayer Wall",
+      "type": "object",
+      "properties": {
+        "userId": { "type": "string" },
+        "userName": { "type": "string" },
+        "userAvatar": { "type": "string" },
+        "text": { "type": "string" },
+        "isAnonymous": { "type": "boolean" },
+        "prayedBy": { "type": "array" },
+        "createdAt": { "type": "string" },
+        "answered": { "type": "boolean" }
+      },
+      "required": ["userId", "text", "isAnonymous", "prayedBy", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/User" },
+      "description": "Public and private profile data for users"
+    },
+    "/users/{userId}/bookmarks/{bookmarkId}": {
+      "schema": { "$ref": "#/entities/Bookmark" },
+      "description": "User specific bookmarks"
+    },
+    "/users/{userId}/streak/status": {
+      "schema": { "$ref": "#/entities/Streak" },
+      "description": "User streak tracking data"
+    },
+    "/favorites/{favoriteId}": {
+      "schema": { "$ref": "#/entities/Favorite" },
+      "description": "Favorited verses across users"
+    },
+    "/notes/{noteId}": {
+      "schema": { "$ref": "#/entities/Note" },
+      "description": "User specific notes"
+    },
+    "/prayers/{prayerId}": {
+      "schema": { "$ref": "#/entities/Prayer" },
+      "description": "User prayer journal entries"
+    },
+    "/studies/{studyId}": {
+      "schema": { "$ref": "#/entities/Study" },
+      "description": "User study summary records"
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Chats between users"
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/ChatMessage" },
+      "description": "Messages inside a chat room"
+    },
+    "/prayer_requests/{requestId}": {
+      "schema": { "$ref": "#/entities/PrayerRequest" },
+      "description": "Global prayer wall request posts"
+    }
+  }
+}

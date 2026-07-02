@@ -117,6 +117,11 @@ interface RecentStudy {
   date: string;
 }
 
+export interface ActivityDay {
+  day: string;
+  minutes: number;
+}
+
 interface AppContextType {
   user: User | null;
   loading: boolean;
@@ -127,10 +132,19 @@ interface AppContextType {
   recentStudies: RecentStudy[];
   bookmarks: BookmarkedVerse[];
   isDarkMode: boolean;
+  // Stats & Progress Tracking
+  chaptersRead: number;
+  dailyGoal: number;
+  secondsSpent: number;
+  weeklyActivity: ActivityDay[];
+  updateChaptersRead: (newChapters: number) => Promise<void>;
+  updateDailyGoal: (newGoal: number) => Promise<void>;
+  resetChaptersRead: () => Promise<void>;
   // Auth Functions
   signInWithGoogle: () => Promise<void>;
   signInGuest: (email: string, displayName?: string, password?: string, isSignUp?: boolean) => Promise<void>;
   logout: () => Promise<void>;
+  updateUserProfile: (displayName: string, photoURL: string | null) => Promise<void>;
   // Action Functions
   toggleTheme: () => void;
   addFavorite: (reference: string, text: string, category: string) => Promise<void>;
@@ -154,6 +168,39 @@ interface AppContextType {
   setTextSize: (size: string) => void;
 }
 
+const getTodayDayName = (): string => {
+  const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+  const todayIndex = new Date().getDay();
+  return days[todayIndex];
+};
+
+const getTodayDateString = (): string => {
+  const date = new Date();
+  return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, "0")}-${date.getDate().toString().padStart(2, "0")}`;
+};
+
+const getInitialActivityData = (): ActivityDay[] => {
+  const baselines: Record<string, number> = {
+    Mon: 14,
+    Tue: 22,
+    Wed: 8,
+    Thu: 18,
+    Fri: 25,
+    Sat: 35,
+    Sun: 28,
+  };
+
+  return [
+    { day: "Mon", minutes: baselines.Mon },
+    { day: "Tue", minutes: baselines.Tue },
+    { day: "Wed", minutes: baselines.Wed },
+    { day: "Thu", minutes: baselines.Thu },
+    { day: "Fri", minutes: baselines.Fri },
+    { day: "Sat", minutes: baselines.Sat },
+    { day: "Sun", minutes: baselines.Sun },
+  ];
+};
+
 const AppContext = createContext<AppContextType | undefined>(undefined);
 
 const DEFAULT_PILGRIM_USER: User = {
@@ -174,6 +221,261 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
   const [recentStudies, setRecentStudies] = useState<RecentStudy[]>([]);
   const [bookmarks, setBookmarks] = useState<BookmarkedVerse[]>([]);
   const { isDarkMode, toggleTheme } = useTheme();
+
+  // --- Real-time Activity and Daily Goal states ---
+  const [chaptersRead, setChaptersRead] = useState<number>(0);
+  const [dailyGoal, setDailyGoal] = useState<number>(3);
+  const [secondsSpent, setSecondsSpent] = useState<number>(0);
+  const [weeklyActivity, setWeeklyActivity] = useState<ActivityDay[]>(getInitialActivityData());
+
+  const statsRef = React.useRef({ chaptersRead, dailyGoal, secondsSpent, weeklyActivity });
+  useEffect(() => {
+    statsRef.current = { chaptersRead, dailyGoal, secondsSpent, weeklyActivity };
+  }, [chaptersRead, dailyGoal, secondsSpent, weeklyActivity]);
+
+  const loadDailyStats = async (uid: string) => {
+    if (!isFirebaseActive || !db) {
+      loadLocalDailyStats();
+      return;
+    }
+
+    try {
+      const statsDocRef = doc(db, "users", uid, "stats", "daily");
+      const statsSnap = await getDoc(statsDocRef);
+      const today = getTodayDateString();
+
+      if (statsSnap.exists()) {
+        const data = statsSnap.data();
+        let loadedChapters = data.chaptersRead || 0;
+        let loadedGoal = data.dailyGoal || 3;
+        let loadedSeconds = data.secondsSpent || 0;
+        let loadedActivity = data.weeklyActivity || getInitialActivityData();
+
+        if (data.lastUpdatedDate !== today) {
+          loadedChapters = 0;
+          loadedSeconds = 0;
+          const todayName = getTodayDayName();
+          loadedActivity = loadedActivity.map((d: ActivityDay) => 
+            d.day === todayName ? { ...d, minutes: 0 } : d
+          );
+          
+          await setDoc(statsDocRef, {
+            chaptersRead: loadedChapters,
+            dailyGoal: loadedGoal,
+            secondsSpent: loadedSeconds,
+            lastUpdatedDate: today,
+            weeklyActivity: loadedActivity,
+            updatedAt: new Date().toISOString()
+          }, { merge: true });
+        }
+
+        setChaptersRead(loadedChapters);
+        setDailyGoal(loadedGoal);
+        setSecondsSpent(loadedSeconds);
+        setWeeklyActivity(loadedActivity);
+
+        saveLocalStats(loadedChapters, loadedGoal, loadedSeconds, loadedActivity, today);
+      } else {
+        const todayName = getTodayDayName();
+        const initialActivity = getInitialActivityData();
+        const localGoal = safeStorage.getItem("pilgrim_daily_bible_goal_v1");
+        let startChapters = 0;
+        let startGoal = 3;
+        if (localGoal) {
+          try {
+            const parsed = JSON.parse(localGoal);
+            if (parsed.lastUpdatedDate === today) {
+              startChapters = parsed.chaptersRead || 0;
+            }
+            startGoal = parsed.dailyGoal || 3;
+          } catch (e) {}
+        }
+
+        const localActivityStr = safeStorage.getItem("pilgrim_weekly_activity_v2");
+        let startActivity = initialActivity;
+        if (localActivityStr) {
+          try {
+            startActivity = JSON.parse(localActivityStr);
+          } catch (e) {}
+        }
+
+        const localSecondsStr = safeStorage.getItem("pilgrim_seconds_spent");
+        let startSeconds = localSecondsStr ? parseInt(localSecondsStr, 10) : 0;
+
+        await setDoc(statsDocRef, {
+          chaptersRead: startChapters,
+          dailyGoal: startGoal,
+          secondsSpent: startSeconds,
+          lastUpdatedDate: today,
+          weeklyActivity: startActivity,
+          updatedAt: new Date().toISOString()
+        });
+
+        setChaptersRead(startChapters);
+        setDailyGoal(startGoal);
+        setSecondsSpent(startSeconds);
+        setWeeklyActivity(startActivity);
+
+        saveLocalStats(startChapters, startGoal, startSeconds, startActivity, today);
+      }
+    } catch (e) {
+      console.error("Failed to load daily stats from Firestore:", e);
+      loadLocalDailyStats();
+    }
+  };
+
+  const loadLocalDailyStats = () => {
+    const today = getTodayDateString();
+    const localGoal = safeStorage.getItem("pilgrim_daily_bible_goal_v1");
+    let chapters = 0;
+    let goal = 3;
+
+    if (localGoal) {
+      try {
+        const parsed = JSON.parse(localGoal);
+        if (parsed.lastUpdatedDate === today) {
+          chapters = parsed.chaptersRead || 0;
+        }
+        goal = parsed.dailyGoal || 3;
+      } catch (e) {}
+    }
+
+    const localActivityStr = safeStorage.getItem("pilgrim_weekly_activity_v2");
+    let activity = getInitialActivityData();
+    if (localActivityStr) {
+      try {
+        activity = JSON.parse(localActivityStr);
+      } catch (e) {}
+    }
+
+    const localSecondsStr = safeStorage.getItem("pilgrim_seconds_spent");
+    let seconds = localSecondsStr ? parseInt(localSecondsStr, 10) : 0;
+
+    if (localGoal) {
+      try {
+        const parsed = JSON.parse(localGoal);
+        if (parsed.lastUpdatedDate !== today) {
+          chapters = 0;
+          seconds = 0;
+          const todayName = getTodayDayName();
+          activity = activity.map((d: ActivityDay) => 
+            d.day === todayName ? { ...d, minutes: 0 } : d
+          );
+          saveLocalStats(chapters, goal, seconds, activity, today);
+        }
+      } catch (e) {}
+    }
+
+    setChaptersRead(chapters);
+    setDailyGoal(goal);
+    setSecondsSpent(seconds);
+    setWeeklyActivity(activity);
+  };
+
+  const saveLocalStats = (chapters: number, goal: number, seconds: number, activity: ActivityDay[], dateStr: string) => {
+    safeStorage.setItem("pilgrim_daily_bible_goal_v1", JSON.stringify({
+      chaptersRead: chapters,
+      dailyGoal: goal,
+      lastUpdatedDate: dateStr
+    }));
+    safeStorage.setItem("pilgrim_weekly_activity_v2", JSON.stringify(activity));
+    safeStorage.setItem("pilgrim_seconds_spent", String(seconds));
+  };
+
+  const saveStatsToFirestore = async (
+    currentChapters: number = chaptersRead,
+    currentGoal: number = dailyGoal,
+    currentSeconds: number = secondsSpent,
+    currentActivity: ActivityDay[] = weeklyActivity
+  ) => {
+    const today = getTodayDateString();
+    saveLocalStats(currentChapters, currentGoal, currentSeconds, currentActivity, today);
+
+    if (isFirebaseActive && db && user) {
+      try {
+        const statsDocRef = doc(db, "users", user.uid, "stats", "daily");
+        await setDoc(statsDocRef, {
+          chaptersRead: currentChapters,
+          dailyGoal: currentGoal,
+          secondsSpent: currentSeconds,
+          lastUpdatedDate: today,
+          weeklyActivity: currentActivity,
+          updatedAt: new Date().toISOString()
+        }, { merge: true });
+        console.log("[Stats] Saved stats to Firestore successfully.");
+      } catch (e) {
+        console.error("Failed to save daily stats to Firestore:", e);
+      }
+    }
+  };
+
+  const updateChaptersRead = async (newChapters: number) => {
+    setChaptersRead(newChapters);
+    const today = getTodayDateString();
+    saveLocalStats(newChapters, dailyGoal, secondsSpent, weeklyActivity, today);
+    await saveStatsToFirestore(newChapters, dailyGoal, secondsSpent, weeklyActivity);
+  };
+
+  const updateDailyGoal = async (newGoal: number) => {
+    setDailyGoal(newGoal);
+    const today = getTodayDateString();
+    saveLocalStats(chaptersRead, newGoal, secondsSpent, weeklyActivity, today);
+    await saveStatsToFirestore(chaptersRead, newGoal, secondsSpent, weeklyActivity);
+  };
+
+  const resetChaptersRead = async () => {
+    setChaptersRead(0);
+    const today = getTodayDateString();
+    saveLocalStats(0, dailyGoal, secondsSpent, weeklyActivity, today);
+    await saveStatsToFirestore(0, dailyGoal, secondsSpent, weeklyActivity);
+  };
+
+  // Real-time app usage tracker interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const current = statsRef.current;
+      const nextSeconds = current.secondsSpent + 60; // increment by 60 seconds
+      const todayName = getTodayDayName();
+      const today = getTodayDateString();
+
+      const nextMinutes = Math.floor(nextSeconds / 60);
+      const updatedActivity = current.weeklyActivity.map((d) => {
+        if (d.day === todayName) {
+          return { ...d, minutes: nextMinutes };
+        }
+        return d;
+      });
+
+      setSecondsSpent(nextSeconds);
+      setWeeklyActivity(updatedActivity);
+
+      saveLocalStats(current.chaptersRead, current.dailyGoal, nextSeconds, updatedActivity, today);
+    }, 60000);
+
+    return () => clearInterval(interval);
+  }, []);
+
+  // Auto-save interval & tab switch listener
+  useEffect(() => {
+    const autoSaveInterval = setInterval(() => {
+      const current = statsRef.current;
+      saveStatsToFirestore(current.chaptersRead, current.dailyGoal, current.secondsSpent, current.weeklyActivity);
+    }, 5 * 60 * 1000);
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "hidden") {
+        const current = statsRef.current;
+        saveStatsToFirestore(current.chaptersRead, current.dailyGoal, current.secondsSpent, current.weeklyActivity);
+      }
+    };
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+
+    return () => {
+      clearInterval(autoSaveInterval);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+    };
+  }, [user]);
 
   // --- Language Selection State ---
   const [language, setLanguageState] = useState<string>(() => {
@@ -265,11 +567,12 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     if (isFirebaseActive && auth) {
       const unsubscribe = onAuthStateChanged(auth, async (firebaseUser) => {
         if (firebaseUser) {
+          const localAvatar = safeStorage.getItem("fg_custom_avatar");
           const u: User = {
             uid: firebaseUser.uid,
             email: firebaseUser.email,
             displayName: firebaseUser.displayName,
-            photoURL: firebaseUser.photoURL
+            photoURL: localAvatar || firebaseUser.photoURL
           };
           setUser(u);
           await loadUserData(firebaseUser.uid);
@@ -431,6 +734,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
           }
         }
       }
+
+      // 6. Load Daily Stats
+      await loadDailyStats(uid);
     } catch (e) {
       console.error("Error loading user data, falling back to Local Storage:", e);
       loadGuestData();
@@ -453,6 +759,9 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     // Load studies
     const localStudies = safeStorage.getItem("fg_studies");
     if (localStudies) setRecentStudies(JSON.parse(localStudies));
+
+    // Load Daily Stats
+    loadLocalDailyStats();
   };
 
   // --- Sign In & Out ---
@@ -572,6 +881,39 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
     setPrayers([]);
     setRecentStudies([]);
     loadGuestData();
+  };
+
+  const updateUserProfile = async (displayName: string, photoURL: string | null) => {
+    if (isFirebaseActive && auth && auth.currentUser) {
+      try {
+        // If photoURL is a Base64 data URL, do NOT send it to Firebase as it exceeds length limits.
+        const isBase64 = photoURL && photoURL.startsWith("data:");
+        const firebasePhotoURL = isBase64 ? (auth.currentUser.photoURL || null) : photoURL;
+
+        await updateProfile(auth.currentUser, { displayName, photoURL: firebasePhotoURL });
+        
+        const updated: User = {
+          uid: auth.currentUser.uid,
+          email: auth.currentUser.email,
+          displayName: auth.currentUser.displayName || displayName,
+          photoURL: photoURL // Keep the custom local Base64 URL in state
+        };
+        setUser(updated);
+      } catch (err) {
+        console.error("Firebase auth updateProfile failed:", err);
+        throw err;
+      }
+    } else {
+      const currentGuest = user || guestUser || DEFAULT_PILGRIM_USER;
+      const updatedUser = {
+        ...currentGuest,
+        displayName,
+        photoURL
+      };
+      setUser(updatedUser);
+      setGuestUser(updatedUser);
+      safeStorage.setItem("guest_user", JSON.stringify(updatedUser));
+    }
   };
 
   const getActiveUserId = () => {
@@ -913,9 +1255,17 @@ export const AppProvider: React.FC<{ children: React.ReactNode }> = ({ children 
       prayers,
       recentStudies,
       isDarkMode,
+      chaptersRead,
+      dailyGoal,
+      secondsSpent,
+      weeklyActivity,
+      updateChaptersRead,
+      updateDailyGoal,
+      resetChaptersRead,
       signInWithGoogle,
       signInGuest,
       logout,
+      updateUserProfile,
       toggleTheme,
       addFavorite,
       removeFavorite,
